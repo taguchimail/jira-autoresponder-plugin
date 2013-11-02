@@ -23,9 +23,11 @@ import org.apache.commons.lang.StringUtils;
 import static org.apache.commons.lang.StringUtils.join;
 
 import com.atlassian.crowd.embedded.api.User;
+import com.atlassian.jira.bc.issue.IssueService;
 import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.event.type.EventDispatchOption;
 import com.atlassian.jira.issue.Issue;
+import com.atlassian.jira.issue.IssueInputParameters;
 import com.atlassian.jira.issue.IssueManager;
 import com.atlassian.jira.issue.MutableIssue;
 import com.atlassian.jira.issue.fields.CustomField;
@@ -75,7 +77,7 @@ public class TMCreateIssueHandler extends CreateIssueHandler {
 
             if (mailserver == null) {
                 // FIXME display this in the UI...
-                context.getMonitor().warning("You do not currently have a smtp mail server set up yet.");
+                context.getMonitor().warning("You currently do not have an smtp mail server set up yet.");
                 return;
             }
 
@@ -167,7 +169,6 @@ public class TMCreateIssueHandler extends CreateIssueHandler {
             }
         }
 
-
         // Send a receipt
         try {
             // Don't reply to messages with Precedence: Bulk,
@@ -182,6 +183,30 @@ public class TMCreateIssueHandler extends CreateIssueHandler {
                     log.debug("Autoresponse not sent due to dry-run mode");
                 }
 
+            } else {
+                if (context.isRealRun()) {
+                    log.debug("Email is bulk. Auto-closing..");
+                    IssueService issueService = ComponentAccessor.getIssueService();
+                    IssueInputParameters issueInputParameters = issueService.newIssueInputParameters();
+                    issueInputParameters.setComment("Closing.");
+
+                    IssueService.TransitionValidationResult transitionValidationResult = issueService.validateTransition(reporter, issueObj.getId(), 6, issueInputParameters);
+
+                    if (transitionValidationResult.isValid()) {
+                        IssueService.IssueResult transitionResult = issueService.transition(reporter, transitionValidationResult);
+                        if (!transitionResult.isValid()) {
+                            // Do something
+                            log.debug("Transition result is not valid");
+                        }
+                    } else {
+                        // Do something
+                        log.debug("Transition validation result is not valid");
+                    }
+                } else {
+                    MessageHandlerExecutionMonitor messageHandlerExecutionMonitor = context.getMonitor();
+                    messageHandlerExecutionMonitor.info("Email is bulk. Closing...");
+                    log.debug("Issue wasn't closed due to dry-run mode");
+                }
             }
         } catch (Exception e) {
             context.getMonitor().warning(getI18nBean().getText("admin.mail.unable.to.create.issue"), e);
