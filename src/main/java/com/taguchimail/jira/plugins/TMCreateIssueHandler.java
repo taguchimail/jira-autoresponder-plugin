@@ -107,7 +107,7 @@ public class TMCreateIssueHandler extends CreateIssueHandler {
 
             responseMessage.append("for your request, and our support team will address it shortly. Should you need to communicate to us further regarding this ticket, please ensure ");
             responseMessage.append(issueKey);
-            responseMessage.append(" is in your email subject line.\n\nRegards,\n\nTaguchi Support\n\n\n");
+            responseMessage.append(" is in your email subject line.\n\nRegards,\n\nTeam Support\n\n\n");
             responseMessage.append("-------------------------------\n\n");
             responseMessage.append(body);
 
